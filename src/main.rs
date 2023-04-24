@@ -1,11 +1,14 @@
 use anyhow;
+use clap::{Parser};
 use reqwest::{
     self,
     header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT},
     Client, Method, Url,
 };
 use serde::Deserialize;
+use std::{path::PathBuf, io::{BufWriter}, fs::File};
 
+// JSON structure of a playlist -- in this case the UK top 50 chart
 mod data_structure;
 
 static _APP_ID: &str = "174ca64a16024fe08a2f923ce6b57ac9";
@@ -25,6 +28,13 @@ struct AccessTokenResponse {
     token_type: String,
 }
 
+// shell args for easier use
+#[derive(Debug, Parser)]
+struct Args {
+    #[arg(short, long, default_value = "./snapshot/", value_name = "PATH")]
+    directory: PathBuf,
+}
+
 async fn get_auth_token() -> anyhow::Result<AccessTokenResponse> {
     let client = Client::new();
 
@@ -41,7 +51,6 @@ async fn get_auth_token() -> anyhow::Result<AccessTokenResponse> {
     Ok(response)
 }
 
-//HashMap<String, Value> -> old version
 async fn fetch_data() -> anyhow::Result<data_structure::Root> {
     let parsed_endpoint = Url::parse(APP_ENDPOINT)?;
     let bearer_token = format!("Bearer {}", get_auth_token().await?.access_token);
@@ -63,8 +72,32 @@ async fn fetch_data() -> anyhow::Result<data_structure::Root> {
     Ok(top_tracks)
 }
 
+/*
+TODO {
+    - CLI API with clap
+    - Data compression?
+    - Data gestion & storage
+}
+*/
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dbg!(fetch_data().await?.tracks.items);
+    let cli: Args = Parser::parse();
+
+    let rough_date = chrono::Local::now().to_string();
+    let date_vec: &str = rough_date.split_whitespace().collect::<Vec<&str>>()[0];
+
+    let file_name = format!("spotify-ukchart-{}.json", date_vec);
+    let mut directory = PathBuf::new();
+    directory.push(cli.directory);
+    directory.push(file_name);
+
+    println!("Attempting to save data to {}", directory.display());
+
+    let file = File::create(directory)?;
+    let mut writer = BufWriter::new(file);
+    let daily_data: data_structure::Root = fetch_data().await?;
+
+    serde_json::to_writer(&mut writer, &daily_data)?;
+
     Ok(())
 }
