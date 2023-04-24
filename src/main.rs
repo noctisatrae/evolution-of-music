@@ -102,6 +102,14 @@ async fn snapshot(cli_directory: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn analysis() -> anyhow::Result<()> {
+    Ok(())
+}
+
+fn clean() -> anyhow::Result<()> {
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli: Args = Parser::parse();
