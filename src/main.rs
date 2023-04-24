@@ -1,12 +1,12 @@
-use anyhow;
-use clap::{Parser};
+use anyhow::{self, Ok};
+use clap::Parser;
 use reqwest::{
     self,
     header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT},
     Client, Method, Url,
 };
 use serde::Deserialize;
-use std::{path::PathBuf, io::{BufWriter}, fs::File};
+use std::{fs::File, io::BufWriter, path::PathBuf};
 
 // JSON structure of a playlist -- in this case the UK top 50 chart
 mod data_structure;
@@ -28,11 +28,13 @@ struct AccessTokenResponse {
     token_type: String,
 }
 
-// shell args for easier use
 #[derive(Debug, Parser)]
 struct Args {
     #[arg(short, long, default_value = "./snapshot/", value_name = "PATH")]
     directory: PathBuf,
+
+    #[arg(short, long, default_value = "snapshot", value_name = "MODE")]
+    mode: String,
 }
 
 async fn get_auth_token() -> anyhow::Result<AccessTokenResponse> {
@@ -79,16 +81,14 @@ TODO {
     - Data gestion & storage
 }
 */
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let cli: Args = Parser::parse();
 
+async fn snapshot(cli_directory: PathBuf) -> anyhow::Result<()> {
     let rough_date = chrono::Local::now().to_string();
     let date_vec: &str = rough_date.split_whitespace().collect::<Vec<&str>>()[0];
 
     let file_name = format!("spotify-ukchart-{}.json", date_vec);
     let mut directory = PathBuf::new();
-    directory.push(cli.directory);
+    directory.push(cli_directory);
     directory.push(file_name);
 
     println!("Attempting to save data to {}", directory.display());
@@ -98,6 +98,27 @@ async fn main() -> anyhow::Result<()> {
     let daily_data: data_structure::Root = fetch_data().await?;
 
     serde_json::to_writer(&mut writer, &daily_data)?;
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let cli: Args = Parser::parse();
+
+    match cli.mode.as_str() {
+        "snapshot" => {
+            snapshot(cli.directory).await?;
+        }
+        "analysis" => {
+            println!("test")
+        }
+        _ => {
+            return Err(anyhow::anyhow!(
+                "Unknown mode! The two available mode are: snapshot, analysis"
+            ));
+        }
+    }
 
     Ok(())
 }
