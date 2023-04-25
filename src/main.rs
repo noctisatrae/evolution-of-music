@@ -1,6 +1,6 @@
 use anyhow::{self, Ok};
 use clap::Parser;
-use data_structure::{Cleaned, Root};
+use data_structure::{AudioAnalysis, Cleaned, Root};
 use reqwest::{
     self,
     header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT},
@@ -18,8 +18,10 @@ mod data_structure;
 
 static _APP_ID: &str = "174ca64a16024fe08a2f923ce6b57ac9";
 static APP_SECRET: &str = "39e7d3f9f0154cdf91bb5cc76d3cfa72"; // HIDE THIS SHIT
-                                                              // 37i9dQZEVXbLnolsZ8PSNw = ID of the daily chart in the UK
-static APP_ENDPOINT: &str = "https://api.spotify.com/v1/playlists/37i9dQZEVXbLnolsZ8PSNw?market=GB";
+static APP_ENDPOINT_CHART: &str =
+    "https://api.spotify.com/v1/playlists/37i9dQZEVXbLnolsZ8PSNw?market=GB";
+// 37i9dQZEVXbLnolsZ8PSNw = ID of the daily chart in the UK
+static APP_ENDPOINT_ANALYSIS: &str = "https://api.spotify.com/v1/audio-features/";
 static APP_USER_AGENT: &str = "reqwest";
 static APP_CONTENT_POLICY: &str = "application/json";
 
@@ -69,7 +71,7 @@ async fn get_auth_token() -> anyhow::Result<AccessTokenResponse> {
 }
 
 async fn fetch_data() -> anyhow::Result<data_structure::Root> {
-    let parsed_endpoint = Url::parse(APP_ENDPOINT)?;
+    let parsed_endpoint = Url::parse(APP_ENDPOINT_CHART)?;
     let bearer_token = format!("Bearer {}", get_auth_token().await?.access_token);
     let bearer_token_static = &bearer_token.as_str();
 
@@ -84,6 +86,29 @@ async fn fetch_data() -> anyhow::Result<data_structure::Root> {
         .send()
         .await?
         .json::<data_structure::Root>()
+        .await?;
+
+    Ok(top_tracks)
+}
+
+async fn fetch_analyis(id: String) -> anyhow::Result<AudioAnalysis> {
+    let endpoint = format!("{}{}", APP_ENDPOINT_ANALYSIS, id);
+
+    let parsed_endpoint = Url::parse(&endpoint)?;
+    let bearer_token = format!("Bearer {}", get_auth_token().await?.access_token);
+    let bearer_token_static = &bearer_token.as_str();
+
+    let mut authorization_header = HeaderMap::new();
+    authorization_header.insert(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT));
+    authorization_header.insert(ACCEPT, HeaderValue::from_static(APP_CONTENT_POLICY));
+    authorization_header.insert(AUTHORIZATION, HeaderValue::from_str(bearer_token_static)?);
+
+    let top_tracks: AudioAnalysis = reqwest::Client::new()
+        .request(Method::GET, parsed_endpoint)
+        .headers(authorization_header)
+        .send()
+        .await?
+        .json::<AudioAnalysis>()
         .await?;
 
     Ok(top_tracks)
@@ -113,16 +138,16 @@ fn analysis() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn clean() -> anyhow::Result<()> {
-    let date: &str = &get_date();
+async fn clean() -> anyhow::Result<()> {
+    let date: Args = Parser::parse();
 
-    let uncleaned_json_path = format!("./snapshot/uncleaned/spotify-ukchart-{}.json", date);
+    let uncleaned_json_path = format!("./snapshot/uncleaned/spotify-ukchart-{}.json", date.date);
     let uncleaned_json_file = File::open(uncleaned_json_path)?;
     let uncleaned_json_reader = BufReader::new(uncleaned_json_file);
 
     let uncleaned_json: Root = serde_json::from_reader(uncleaned_json_reader)?;
 
-    let cleaned_json_path = format!("./snapshot/cleaned/spotify-ukchart-{}.json", date);
+    let cleaned_json_path = format!("./snapshot/cleaned/spotify-ukchart-{}.json", date.date);
     let cleaned_json_file = File::create(cleaned_json_path)?;
 
     let mut cleaned_json_vec: Vec<Cleaned> = vec![];
@@ -136,12 +161,18 @@ fn clean() -> anyhow::Result<()> {
         video_thumbnail: _,
     } in uncleaned_json.tracks.items
     {
+        let fetched_audio_feature: AudioAnalysis = fetch_analyis(track.id.clone()).await?;
+
+        println!("Fetching audio analysis for {}", &track.name);
+
         cleaned_json_vec.push(Cleaned {
             name: track.name,
             duration_ms: track.duration_ms,
             popularity: track.popularity,
             id: track.id,
+            audio_feature: fetched_audio_feature,
         });
+
     }
 
     serde_json::to_writer(cleaned_json_file, &cleaned_json_vec)?;
@@ -161,7 +192,7 @@ async fn main() -> anyhow::Result<()> {
             analysis()?;
         }
         "cleaning" => {
-            clean()?;
+            clean().await?;
         }
         _ => {
             return Err(anyhow::anyhow!(
