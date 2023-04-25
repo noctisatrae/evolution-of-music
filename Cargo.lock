@@ -387,6 +387,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "lazy_static",
  "reqwest",
  "serde",
  "serde_json",

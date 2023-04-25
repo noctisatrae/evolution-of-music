@@ -134,6 +134,7 @@ pub struct Track {
     #[serde(rename = "is_playable")]
     pub is_playable: bool,
     pub name: String,
+    /// The popularity of the track. The value will be between 0 and 100, with 100 being the most popular.
     pub popularity: i64,
     #[serde(rename = "preview_url")]
     pub preview_url: Option<String>,
@@ -260,4 +261,14 @@ pub struct ExternalUrls8 {
 #[serde(rename_all = "camelCase")]
 pub struct VideoThumbnail {
     pub url: Value,
+}
+
+// ==============================================================================
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Cleaned {
+    pub name: String,
+    pub duration_ms: i64,
+    /// The popularity of the track. The value will be between 0 and 100, with 100 being the most popular.
+    pub popularity: i64,
+    pub id: String,
 }

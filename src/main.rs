@@ -1,12 +1,17 @@
 use anyhow::{self, Ok};
 use clap::Parser;
+use data_structure::{Root, Cleaned};
 use reqwest::{
     self,
     header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT},
     Client, Method, Url,
 };
 use serde::Deserialize;
-use std::{fs::File, io::BufWriter, path::PathBuf};
+use std::{
+    fs::File,
+    io::{BufReader, BufWriter},
+    path::PathBuf,
+};
 
 // JSON structure of a playlist -- in this case the UK top 50 chart
 mod data_structure;
@@ -35,6 +40,16 @@ struct Args {
 
     #[arg(short, long, default_value = "snapshot", value_name = "MODE")]
     mode: String,
+
+    #[arg(long, default_value_t = get_date(), value_name = "DATE")]
+    date: String,
+}
+
+fn get_date() -> String {
+    let rough_date = chrono::Local::now().to_string();
+    let date = String::from(rough_date.split_whitespace().collect::<Vec<&str>>()[0]);
+
+    date
 }
 
 async fn get_auth_token() -> anyhow::Result<AccessTokenResponse> {
@@ -74,21 +89,13 @@ async fn fetch_data() -> anyhow::Result<data_structure::Root> {
     Ok(top_tracks)
 }
 
-/*
-TODO {
-    - CLI API with clap
-    - Data compression?
-    - Data gestion & storage
-}
-*/
-
 async fn snapshot(cli_directory: PathBuf) -> anyhow::Result<()> {
-    let rough_date = chrono::Local::now().to_string();
-    let date_vec: &str = rough_date.split_whitespace().collect::<Vec<&str>>()[0];
+    let date = get_date();
 
-    let file_name = format!("spotify-ukchart-{}.json", date_vec);
+    let file_name = format!("spotify-ukchart-{}.json", date);
     let mut directory = PathBuf::new();
     directory.push(cli_directory);
+    directory.push("uncleaned");
     directory.push(file_name);
 
     println!("Attempting to save data to {}", directory.display());
@@ -107,6 +114,38 @@ fn analysis() -> anyhow::Result<()> {
 }
 
 fn clean() -> anyhow::Result<()> {
+    let date: &str = &get_date();
+
+    let uncleaned_json_path = format!("./snapshot/uncleaned/spotify-ukchart-{}.json", date);
+    let uncleaned_json_file = File::open(uncleaned_json_path)?;
+    let uncleaned_json_reader = BufReader::new(uncleaned_json_file);
+
+    let uncleaned_json: Root = serde_json::from_reader(uncleaned_json_reader)?;
+
+    let cleaned_json_path = format!("./snapshot/cleaned/spotify-ukchart-{}.json", date);
+    let cleaned_json_file = File::create(cleaned_json_path)?;
+
+    let mut cleaned_json_vec: Vec<Cleaned> = vec![];
+
+    for data_structure::Item {
+        track,
+        added_at: _,
+        added_by: _,
+        is_local: _,
+        primary_color: _,
+        video_thumbnail: _,
+    } in uncleaned_json.tracks.items
+    {
+        cleaned_json_vec.push(Cleaned { 
+            name: track.name, 
+            duration_ms: track.duration_ms, 
+            popularity: track.popularity, 
+            id: track.id 
+        });
+    }
+
+    serde_json::to_writer(cleaned_json_file, &cleaned_json_vec)?;
+
     Ok(())
 }
 
@@ -119,14 +158,30 @@ async fn main() -> anyhow::Result<()> {
             snapshot(cli.directory).await?;
         }
         "analysis" => {
-            println!("test")
+            analysis()?;
+        }
+        "cleaning" => {
+            clean()?;
         }
         _ => {
             return Err(anyhow::anyhow!(
-                "Unknown mode! The two available mode are: snapshot, analysis"
+                "Unknown mode! The two available mode are: snapshot, analysis or cleaning"
             ));
         }
     }
 
     Ok(())
 }
+
+// TODO
+// - Cleaning data to only keep useful infos for PCA
+// - DONE: Add a new argument to handle dates in CLI.
+// - Analysis PCA:
+//      - https://crates.io/crates/petal-decomposition
+
+/*
+TODO {
+    - DONE: CLI API with clap
+    - DONE: Data gestion & storage
+}
+*/
