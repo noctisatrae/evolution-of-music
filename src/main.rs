@@ -1,6 +1,6 @@
 use anyhow::{self, Ok};
 use clap::Parser;
-use data_structure::{Root, Cleaned};
+use data_structure::{Cleaned, Root};
 use reqwest::{
     self,
     header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT},
@@ -136,11 +136,11 @@ fn clean() -> anyhow::Result<()> {
         video_thumbnail: _,
     } in uncleaned_json.tracks.items
     {
-        cleaned_json_vec.push(Cleaned { 
-            name: track.name, 
-            duration_ms: track.duration_ms, 
-            popularity: track.popularity, 
-            id: track.id 
+        cleaned_json_vec.push(Cleaned {
+            name: track.name,
+            duration_ms: track.duration_ms,
+            popularity: track.popularity,
+            id: track.id,
         });
     }
 
