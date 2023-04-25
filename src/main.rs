@@ -205,7 +205,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 // TODO
-// - Cleaning data to only keep useful infos for PCA
+// - DONE Cleaning data to only keep useful infos for PCA
 // - DONE: Add a new argument to handle dates in CLI.
 // - Analysis PCA:
 //      - https://crates.io/crates/petal-decomposition
