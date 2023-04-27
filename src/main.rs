@@ -1,6 +1,6 @@
 use anyhow::{self, Ok};
 use clap::Parser;
-use data_structure::{AudioAnalysis, Cleaned, Root};
+use data_structure::{AudioAnalysis, Cleaned, Root, AudioAnalysis2};
 use reqwest::{
     self,
     header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT},
@@ -91,7 +91,7 @@ async fn fetch_data() -> anyhow::Result<data_structure::Root> {
     Ok(top_tracks)
 }
 
-async fn fetch_analyis(id: String) -> anyhow::Result<AudioAnalysis> {
+async fn fetch_analyis(id: String) -> anyhow::Result<AudioAnalysis2> {
     let endpoint = format!("{}{}", APP_ENDPOINT_ANALYSIS, id);
 
     let parsed_endpoint = Url::parse(&endpoint)?;
@@ -103,12 +103,12 @@ async fn fetch_analyis(id: String) -> anyhow::Result<AudioAnalysis> {
     authorization_header.insert(ACCEPT, HeaderValue::from_static(APP_CONTENT_POLICY));
     authorization_header.insert(AUTHORIZATION, HeaderValue::from_str(bearer_token_static)?);
 
-    let top_tracks: AudioAnalysis = reqwest::Client::new()
+    let top_tracks: AudioAnalysis2 = reqwest::Client::new()
         .request(Method::GET, parsed_endpoint)
         .headers(authorization_header)
         .send()
         .await?
-        .json::<AudioAnalysis>()
+        .json::<AudioAnalysis2>()
         .await?;
 
     Ok(top_tracks)
@@ -161,7 +161,7 @@ async fn clean() -> anyhow::Result<()> {
         video_thumbnail: _,
     } in uncleaned_json.tracks.items
     {
-        let fetched_audio_feature: AudioAnalysis = fetch_analyis(track.id.clone()).await?;
+        let fetched_audio_feature: AudioAnalysis2 = fetch_analyis(track.id.clone()).await?;
 
         println!("Fetching audio analysis for {}", &track.name);
 
@@ -170,7 +170,21 @@ async fn clean() -> anyhow::Result<()> {
             duration_ms: track.duration_ms,
             popularity: track.popularity,
             id: track.id,
-            audio_feature: fetched_audio_feature,
+            audio_feature: AudioAnalysis { 
+                acousticness: fetched_audio_feature.acousticness, 
+                danceability: fetched_audio_feature.danceability, 
+                duration_ms: fetched_audio_feature.duration_ms, 
+                energy: fetched_audio_feature.energy, 
+                instrumentalness: fetched_audio_feature.instrumentalness, 
+                key: fetched_audio_feature.key, 
+                liveness: fetched_audio_feature.liveness, 
+                loudness: fetched_audio_feature.loudness, 
+                mode: fetched_audio_feature.mode, 
+                speechiness: fetched_audio_feature.speechiness, 
+                tempo: fetched_audio_feature.tempo, 
+                time_signature: fetched_audio_feature.time_signature, 
+                valence: fetched_audio_feature.valence 
+            },
         });
 
     }
@@ -207,8 +221,9 @@ async fn main() -> anyhow::Result<()> {
 // TODO
 // - DONE Cleaning data to only keep useful infos for PCA
 // - DONE: Add a new argument to handle dates in CLI.
-// - Analysis PCA:
+// - DONE: Analysis PCA:
 //      - https://crates.io/crates/petal-decomposition
+// - Research why it isn't working exactly as it should
 
 /*
 TODO {

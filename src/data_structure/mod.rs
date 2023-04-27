@@ -278,6 +278,26 @@ pub struct Cleaned {
 #[serde(rename_all = "camelCase")]
 pub struct AudioAnalysis {
     pub acousticness: f64,
+    pub danceability: f64,
+    #[serde(rename = "duration_ms")]
+    pub duration_ms: i64,
+    pub energy: f64,
+    pub instrumentalness: f64,
+    pub key: i64,
+    pub liveness: f64,
+    pub loudness: f64,
+    pub mode: i64,
+    pub speechiness: f64,
+    pub tempo: f64,
+    #[serde(rename = "time_signature")]
+    pub time_signature: i64,
+    pub valence: f64,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioAnalysis2 {
+    pub acousticness: f64,
     #[serde(rename = "analysis_url")]
     pub analysis_url: String,
     pub danceability: f64,
