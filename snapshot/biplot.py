@@ -68,8 +68,6 @@ def biplot(pca=[],x=None,y=None,components=[0,1],score=None,coeff=None,coeff_lab
 
     data = pd.DataFrame({"x_c":x_c,"y_c":y_c})
 
-    print("Attention : pour des facilités d'affichage, les données sont centrées-réduites")
-
     if cat is None : cat = [0]*len(xs)
 
     elif len(pd.Series(cat)) == 1 : cat = list(pd.Series(cat))*len(xs)
@@ -87,8 +85,6 @@ def biplot(pca=[],x=None,y=None,components=[0,1],score=None,coeff=None,coeff_lab
     if (len(xs) < bigdata) :   
 
         ax.scatter(x_c,y_c, c = cat.cat.codes,cmap=cmap)
-
-        if density==True : print("Warning ! Le mode density actif n'apparait que si BigData est paramétré.")
 
     # Affichage des nappes convexes (BigData)
 

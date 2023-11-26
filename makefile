@@ -1,19 +1,22 @@
 pipeline:
-	echo "[PIPELINE] ===================================="
+	echo "[PIPELINE]"
 	make snapshot && make clean && make venv && make analysis 
 
 snapshot:
-	echo "[SNAPSHOT] ===================================="
+	echo "[SNAPSHOT]"
 	cargo run
 
 clean:
-	echo "[CLEANING] ===================================="
+	echo "[CLEANING]"
 	cargo run -- --mode cleaning
 
 analysis: 
-	echo "[ANALYSING] ===================================="
+	echo "[ANALYSING]"
 	python ./snapshot/analysis.py
 
 venv:
-	echo "[STARTING VENV] ===================================="
-	source .venv/bin/activate
+	echo "[STARTING VENV]"
+	( \
+       source .venv/bin/activate; \
+       python snapshot/analysis.py; \
+    )	
