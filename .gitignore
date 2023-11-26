@@ -1,2 +1,5 @@
 /target
-/snapshot
+cleaned
+uncleaned
+__pycache__
+.venv

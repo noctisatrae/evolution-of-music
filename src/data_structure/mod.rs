@@ -152,7 +152,7 @@ pub struct Track {
 #[serde(rename_all = "camelCase")]
 pub struct Album {
     #[serde(rename = "album_group")]
-    pub album_group: String,
+    pub album_group: Option<String>,
     #[serde(rename = "album_type")]
     pub album_type: String,
     pub artists: Vec<Artist>,
