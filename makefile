@@ -1,6 +1,8 @@
+BIN=.venv/bin/
+
 pipeline:
 	echo "[PIPELINE]"
-	make snapshot && make clean && make venv && make analysis 
+	make snapshot && make clean && make analysis 
 
 snapshot:
 	echo "[SNAPSHOT]"
@@ -12,11 +14,8 @@ clean:
 
 analysis: 
 	echo "[ANALYSING]"
-	python ./snapshot/analysis.py
+	$(BIN)/python ./snapshot/analysis.py
 
-venv:
-	echo "[STARTING VENV]"
-	( \
-       source .venv/bin/activate; \
-       python snapshot/analysis.py; \
-    )	
+requirements:
+	echo "[INSTALLING REQUIREMENTS]"
+	$(BIN)/pip install -r ./snapshot/requirements.txt
