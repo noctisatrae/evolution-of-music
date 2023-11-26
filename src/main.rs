@@ -12,6 +12,7 @@ use std::{
     io::{BufReader, BufWriter},
     path::PathBuf,
 };
+use indicatif::{ProgressBar, ProgressStyle};
 
 // JSON structure of a playlist -- in this case the UK top 50 chart
 mod data_structure;
@@ -152,6 +153,9 @@ async fn clean() -> anyhow::Result<()> {
 
     let mut cleaned_json_vec: Vec<Cleaned> = vec![];
 
+    let pb = ProgressBar::new(uncleaned_json.tracks.items.len() as u64);
+    pb.set_style(ProgressStyle::default_bar().template("[{elapsed_precise}] {wide_msg:.cyan.bold} {spinner:.green} [{bar:40.cyan/blue}]")?);
+
     for data_structure::Item {
         track,
         added_at: _,
@@ -163,7 +167,8 @@ async fn clean() -> anyhow::Result<()> {
     {
         let fetched_audio_feature: AudioAnalysis2 = fetch_analyis(track.id.clone()).await?;
 
-        println!("Fetching audio analysis for {}", &track.name);
+        let msg = format!("{}", &track.name);
+        pb.set_message(msg);
 
         cleaned_json_vec.push(Cleaned {
             name: track.name,
@@ -187,10 +192,11 @@ async fn clean() -> anyhow::Result<()> {
             },
         });
 
+        pb.inc(1);
+
     }
 
     serde_json::to_writer(cleaned_json_file, &cleaned_json_vec)?;
-
     Ok(())
 }
 
