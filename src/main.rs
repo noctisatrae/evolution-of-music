@@ -17,8 +17,8 @@ use indicatif::{ProgressBar, ProgressStyle};
 // JSON structure of a playlist -- in this case the UK top 50 chart
 mod data_structure;
 
-static _APP_ID: &str = "174ca64a16024fe08a2f923ce6b57ac9";
-static APP_SECRET: &str = "39e7d3f9f0154cdf91bb5cc76d3cfa72"; // HIDE THIS SHIT
+static _APP_ID: &str = "";
+static APP_SECRET: &str = ""; // Replace with your own
 static APP_ENDPOINT_CHART: &str =
     "https://api.spotify.com/v1/playlists/37i9dQZEVXbLnolsZ8PSNw?market=GB";
 // 37i9dQZEVXbLnolsZ8PSNw = ID of the daily chart in the UK

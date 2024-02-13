@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 import biplot
 
 # Load the JSON data
-with open('snapshot/cleaned/spotify-ukchart-2023-11-26.json') as f:
+with open('snapshot/cleaned/spotify-ukchart-2023-04-24.json') as f:
     data = json.load(f)
 
 # Extract the audio features and ranking from the JSON data
@@ -41,7 +41,7 @@ audio_features = StandardScaler().fit_transform(np.array(audio_features))
 ranking = np.array(ranking)
 
 # Perform PCA
-pca = PCA(n_components=3)
+pca = PCA(n_components=2) # dimension
 transformed_data = pca.fit_transform(audio_features)
 
 print(pca.explained_variance_ratio_)

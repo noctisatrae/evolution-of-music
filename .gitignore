@@ -1,5 +1,7 @@
 /target
 cleaned
 uncleaned
+figures
 __pycache__
 .venv
+secrets.txt
